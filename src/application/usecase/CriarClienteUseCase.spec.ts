@@ -13,7 +13,6 @@ class MockClientRepository implements ClientRepositoryPort {
       throw new Error("Method not implemented.");
   }
   async create(cliente: any): Promise<void> {
-    // Implementação do mock para o método create
     console.log('Mocked create:', cliente);
   }
 }
@@ -42,8 +41,11 @@ describe('CriarClienteUseCase', () => {
     criarClienteUseCase = new CriarClienteUseCase(clienteRepository, cepService);
   });
 
+  afterEach(() => { 
+    jest.clearAllMocks();
+  });
+
   it('should create a new client', async () => {
-    // Arrange
     const input = {
       cpf: '12345678901',
       cep: '12345-678',
@@ -51,14 +53,19 @@ describe('CriarClienteUseCase', () => {
       email: 'john@example.com',
     };
 
-    // Spy nos métodos
     const consultarCepSpy = jest.spyOn(cepService, 'consultarCep');
     const createSpy = jest.spyOn(clienteRepository, 'create');
 
-    // Act
+    consultarCepSpy.mockResolvedValue({
+      cep: '12345-678',
+      logradouro: 'Mocked Street',
+      bairro: 'Mocked Neighborhood',
+      localidade: 'Mocked City',
+      uf: 'MS'
+    });
+
     await criarClienteUseCase.execute(input);
 
-    // Assert
     expect(consultarCepSpy).toHaveBeenCalledWith(input.cep);
     expect(createSpy).toHaveBeenCalledWith({
       cpf: input.cpf,
@@ -71,4 +78,29 @@ describe('CriarClienteUseCase', () => {
       email: input.email,
     });
   });
+
+  it('should throw an error when address is not found', async () => {
+    const input = {
+      cpf: '12345678901',
+      cep: '12345-678',
+      nome: 'John Doe',
+      email: 'john@example.com',
+    };
+
+    const consultarCepSpy = jest.spyOn(cepService, 'consultarCep');
+    const createSpy = jest.spyOn(clienteRepository, 'create');
+
+    consultarCepSpy.mockRejectedValue("Endereco não encontrado");
+
+    try {
+      await criarClienteUseCase.execute(input);  
+    } catch (err) {
+      expect(err).toEqual("Endereco não encontrado");
+    }
+    
+
+    expect(consultarCepSpy).toHaveBeenCalledWith(input.cep);
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
 });

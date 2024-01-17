@@ -18,7 +18,9 @@ export class CriarClienteUseCase {
   async execute({ cpf, cep, nome,email }: CriarClienteUseCaseInput): Promise<void> {
     const enderecoNovo = await this.cepService.consultarCep(cep);
 
-    if (enderecoNovo) {
+    if (!enderecoNovo) {
+      throw new Error("Endereco não encontrado");
+    }
       const novoCliente:ClientEntity = {
           cpf,
           cep: enderecoNovo.cep,
@@ -31,6 +33,6 @@ export class CriarClienteUseCase {
       };
 
       await this.clienteRepository.create(novoCliente);
-    }
+    
   }
 }
